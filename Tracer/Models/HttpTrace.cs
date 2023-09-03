@@ -11,5 +11,7 @@ namespace Tracer.Models
         public string RequestPath { get; set; }
         public string RequestBody { get; set; }
         public string ResponseBody { get; set; }
+        public Int16 ResponseStatusCode { get; set; }
+        public Error TracerError { get; set; }
     }
 }

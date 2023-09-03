@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Internal;
 using System.Globalization;
 using Tracer.Factories;
 
@@ -17,11 +18,19 @@ public class TracerMiddleware
     {
         var processor = processorFactory.GetTraceProcessor(Processors.TraceProcessorType.TraceToFile);
 
+        HttpRequestRewindExtensions.EnableBuffering(context.Request);
         await processor.ProcessRequestAsync(context);
 
-        // Call the next delegate/middleware in the pipeline.
-        await _next(context);
+        try
+        {
+            await _next(context);
 
-        await processor.ProcessResponseAsync(context);
+            await processor.ProcessResponseAsync(context);
+        }
+        catch (Exception ex)
+        {
+
+        }
+        
     }
 }
