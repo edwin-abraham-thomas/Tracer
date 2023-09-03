@@ -2,7 +2,7 @@ using Domain.ApiModels;
 using Domain.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
-namespace SampleWebApi.Controllers;
+namespace WebApi.Controllers;
 
 [ApiController]
 [Route("[controller]")]
@@ -22,7 +22,7 @@ public class WeatherForecastController : ControllerBase
     {
         var forecast = await _service.GetAsync(new CancellationToken());
 
-        if(forecast == null)
+        if (forecast == null)
         {
             return NotFound();
         }
