@@ -11,4 +11,5 @@ public interface ITraceProcessor
 {
     Task ProcessRequestAsync(HttpContext httpContext);
     Task ProcessResponseAsync(HttpContext httpContext);
+    Task ProcessUnhandledException(HttpContext httpContext, Exception exception);
 }

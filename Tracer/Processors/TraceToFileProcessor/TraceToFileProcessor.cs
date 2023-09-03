@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Diagnostics;
+using System.Net.Http;
 using Tracer.Models;
 
 namespace Tracer.Processors.TraceToFileProcessor;
@@ -13,50 +15,107 @@ internal class TraceToFileProcessor : ITraceToFileProcessor
     }
 
     private readonly string _traceFilePath = @".\Traces\";
+    private Stream originalResponseBody;
+    private MemoryStream responseBodyMemoryStream;
 
     public async Task ProcessRequestAsync(HttpContext httpContext)
     {
-        var request = httpContext.Request;
+        var trace = null as HttpTrace;
 
-        var reader = new StreamReader(request.Body);
-        var rawMessage = await reader.ReadToEndAsync();
-
-        var trace = new HttpTrace
-        {
-            RequestPath = request.Path,
-            RequestBody = rawMessage
-        };
-
-        string json = JsonConvert.SerializeObject(trace);
         try
         {
-            await File.WriteAllTextAsync(GetFilePath(httpContext.Connection.Id), json);
+            this.originalResponseBody = httpContext.Response.Body;
+            this.responseBodyMemoryStream = new MemoryStream();
+            httpContext.Response.Body = responseBodyMemoryStream;
+
+            var request = httpContext.Request;
+
+            var reader = new StreamReader(request.Body);
+            var rawMessage = await reader.ReadToEndAsync();
+
+            trace = new HttpTrace
+            {
+                RequestPath = request.Path,
+                RequestBody = rawMessage
+            };
+
+            await CreateTraceFile(trace, httpContext.Connection.Id);
         }
         catch (Exception ex)
         {
-            throw ex;
+            UpsertException(ex, trace);
+            await CreateTraceFile(trace, httpContext.Connection.Id);
         }
     }
 
     public async Task ProcessResponseAsync(HttpContext httpContext)
     {
+        var trace = null as HttpTrace;
+
         try
         {
-            var trace = await GetTrace(httpContext.Connection.Id);
+            trace = await GetTrace(httpContext.Connection.Id);
 
             var response = httpContext.Response;
 
-            var reader = new StreamReader(response.Body);
-            var rawMessage = await reader.ReadToEndAsync();
+            using (var responseBodyStream = new StreamReader(responseBodyMemoryStream))
+            {
+                responseBodyMemoryStream.Position = 0;
+                var responseBody = await responseBodyStream.ReadToEndAsync();
 
-            trace.ResponseBody = rawMessage;
+                trace.ResponseBody = responseBody;
+                trace.ResponseStatusCode = (short) httpContext.Response.StatusCode;
 
-            await UpdateTraceFile(trace, httpContext.Connection.Id);
+                responseBodyMemoryStream.Position = 0;
+                await responseBodyMemoryStream.CopyToAsync(originalResponseBody);
+
+                await UpdateTraceFile(trace, httpContext.Connection.Id);
+            }            
         }
         catch (Exception ex)
         {
-            throw ex;
+            UpsertException(ex, trace);
+            await UpdateTraceFile(trace, httpContext.Connection.Id);
         }
+        finally
+        {
+            await responseBodyMemoryStream.DisposeAsync();
+            await originalResponseBody.DisposeAsync();
+        }
+    }
+
+    public Task ProcessUnhandledException(HttpContext httpContext, Exception exception)
+    {
+        throw new NotImplementedException();
+    }
+
+    private void UpsertException(Exception exception, HttpTrace? httpTrace)
+    {
+        if (httpTrace != null)
+        {
+            httpTrace.TracerError = new Error
+            {
+                ErrorMessage = exception.Message,
+                Exception = exception,
+            };
+        }
+        else
+        {
+            httpTrace = new HttpTrace
+            {
+                TracerError = new Error
+                {
+                    ErrorMessage = exception.Message,
+                    Exception = exception,
+                }
+            };
+        }
+    }
+
+    private async Task CreateTraceFile(HttpTrace trace, string connectionId)
+    {
+        string json = JsonConvert.SerializeObject(trace);
+        await File.WriteAllTextAsync(GetFilePath(connectionId), json);
     }
 
     private async Task UpdateTraceFile(HttpTrace httpTrace, string connectionId)
@@ -95,4 +154,5 @@ internal class TraceToFileProcessor : ITraceToFileProcessor
 
         Directory.CreateDirectory(_traceFilePath);
     }
+
 }

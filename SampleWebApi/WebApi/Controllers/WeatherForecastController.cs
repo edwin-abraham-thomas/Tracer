@@ -20,6 +20,7 @@ public class WeatherForecastController : ControllerBase
     [HttpGet(Name = "GetWeatherForecast")]
     public async Task<ActionResult<WeatherForecast>> GetAsync()
     {
+        throw new NotImplementedException();
         var forecast = await _service.GetAsync(new CancellationToken());
 
         if (forecast == null)
