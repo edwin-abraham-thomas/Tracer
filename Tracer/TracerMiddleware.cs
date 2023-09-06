@@ -5,7 +5,7 @@ using Tracer.Factories;
 
 namespace Tracer;
 
-public class TracerMiddleware
+internal class TracerMiddleware
 {
     private readonly RequestDelegate _next;
 
@@ -18,18 +18,18 @@ public class TracerMiddleware
     {
         var processor = processorFactory.GetTraceProcessor(Processors.TraceProcessorType.TraceToFile);
 
-        HttpRequestRewindExtensions.EnableBuffering(context.Request);
-        await processor.ProcessRequestAsync(context);
-
         try
         {
+            HttpRequestRewindExtensions.EnableBuffering(context.Request);
+            await processor.ProcessRequestAsync(context);
+
             await _next(context);
 
             await processor.ProcessResponseAsync(context);
         }
         catch (Exception ex)
         {
-
+            await processor.ProcessUnhandledException(context, ex);
         }
         
     }
