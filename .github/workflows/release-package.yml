@@ -24,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: dotnet restore
       - name: Build
-        run: dotnet build WebAPI.Template/ --configuration Release
+        run: dotnet build .\Tracer.Core\ --configuration Release
         
   create_packages:
     needs: build
