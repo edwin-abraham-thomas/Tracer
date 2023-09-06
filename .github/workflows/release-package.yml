@@ -53,6 +53,11 @@ jobs:
         shell: pwsh
         run: dotnet pack .\Tracer\Tracer.Extensions.TraceableServiceRegistrar\ -c Release -o .\ -p:PackageVersion=${env:releaseversion}
 
+      - name: Publish Core Nuget Package
+        shell: pwsh
+        #run: dotnet nuget push "*.nupkg" --api-key ${{secrets.NUGET_API_KEY}} --source https://api.nuget.org/v3/index.json
+        run: ls
+
   publish_packages:
     needs: create_packages
     runs-on: ubuntu-latest
