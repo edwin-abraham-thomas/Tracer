@@ -52,3 +52,22 @@ jobs:
       - name: Create Tracer.Extensions.TraceableServiceRegistrar Nuget Package
         shell: pwsh
         run: dotnet pack .\Tracer\Tracer.Extensions.TraceableServiceRegistrar\ -c Release -o . -p:PackageVersion=${env:releaseversion}
+
+  publish_packages:
+    needs: create_packages
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dotnet-version: [ '6.0.x' ]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: ${{ matrix.dotnet-version }}
+
+      - name: Publish Core Nuget Package
+        shell: pwsh
+        run: dotnet nuget push "*.nupkg" --api-key ${{secrets.NUGET_API_KEY}} --source https://api.nuget.org/v3/index.json
