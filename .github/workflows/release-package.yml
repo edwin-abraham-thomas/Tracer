@@ -49,6 +49,6 @@ jobs:
         shell: pwsh
         run: dotnet pack .\Tracer\Tracer.Core\ -c Release -o . -p:PackageVersion=${env:releaseversion}
       
-      - name: Create Core Nuget Package
+      - name: Create Tracer.Extensions.TraceableServiceRegistrar Nuget Package
         shell: pwsh
         run: dotnet pack .\Tracer\Tracer.Extensions.TraceableServiceRegistrar\ -c Release -o . -p:PackageVersion=${env:releaseversion}
