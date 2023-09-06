@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Tracer\Tracer.csproj" />
+    <ProjectReference Include="..\..\Tracer\Tracer.Extensions.TraceableServiceRegistrar\Tracer.Extensions.ServiceRegistrar.csproj" />
     <ProjectReference Include="..\Entities\Entities.csproj" />
   </ItemGroup>
 

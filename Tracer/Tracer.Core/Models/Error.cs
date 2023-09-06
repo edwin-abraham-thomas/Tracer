@@ -1,6 +1,6 @@
 ﻿namespace Tracer.Models;
 
-internal class Error
+public class Error
 {
     public Error(string errorMessage, Exception exception)
     {
