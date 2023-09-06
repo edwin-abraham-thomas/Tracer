@@ -24,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: dotnet restore
       - name: Build
-        run: dotnet build .\Tracer.Core\ --configuration Release
+        run: dotnet build --configuration Release
         
   create_packages:
     needs: build
@@ -47,8 +47,8 @@ jobs:
 
       - name: Create Core Nuget Package
         shell: pwsh
-        run: dotnet pack .\Tracer.Core\ -c Release -o . -p:PackageVersion=${env:releaseversion}
+        run: dotnet pack .\Tracer\Tracer.Core\ -c Release -o . -p:PackageVersion=${env:releaseversion}
       
       - name: Create Core Nuget Package
         shell: pwsh
-        run: dotnet pack .\Tracer.Extensions.TraceableServiceRegistrar\ -c Release -o . -p:PackageVersion=${env:releaseversion}
+        run: dotnet pack .\Tracer\Tracer.Extensions.TraceableServiceRegistrar\ -c Release -o . -p:PackageVersion=${env:releaseversion}
