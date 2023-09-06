@@ -1,0 +1,54 @@
+name: Release Packages
+
+on:
+  push:
+    branches: [ "release/**" ]
+
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dotnet-version: [ '6.0.x' ]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: ${{ matrix.dotnet-version }}
+
+      - name: Install dependencies
+        run: dotnet restore
+      - name: Build
+        run: dotnet build WebAPI.Template/ --configuration Release
+        
+  create_packages:
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dotnet-version: [ '6.0.x' ]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: ${{ matrix.dotnet-version }}
+
+      - name: Extract Release Version
+        shell: pwsh
+        run: $release_version = ${env:GITHUB_REF}.split("/")[-1] ; echo "releaseversion=$release_version" >> ${env:GITHUB_ENV} ; echo "releaseversion=$release_version"
+
+      - name: Create Core Nuget Package
+        shell: pwsh
+        run: dotnet pack .\Tracer.Core\ -c Release -o . -p:PackageVersion=${env:releaseversion}
+      
+      - name: Create Core Nuget Package
+        shell: pwsh
+        run: dotnet pack .\Tracer.Extensions.TraceableServiceRegistrar\ -c Release -o . -p:PackageVersion=${env:releaseversion}

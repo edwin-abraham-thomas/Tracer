@@ -6,7 +6,7 @@ using Tracer.Processors;
 
 namespace Tracer.Interceptors;
 
-internal class PublicMethodInterceptor : IInterceptor
+public class PublicMethodInterceptor : IInterceptor
 {
 
     private readonly ITraceProcessor _traceProcessor;

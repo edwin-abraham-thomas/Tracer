@@ -8,7 +8,7 @@ using Tracer.Models;
 
 namespace Tracer.Processors;
 
-internal interface ITraceProcessor
+public interface ITraceProcessor
 {
     Task ProcessRequestAsync(HttpContext httpContext);
     Task ProcessResponseAsync(HttpContext httpContext);

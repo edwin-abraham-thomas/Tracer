@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Tracer.Models;
 
-internal class HttpTrace
+public class HttpTrace
 {
     public string? RequestPath { get; set; }
     public object? RequestBody { get; set; }
@@ -17,12 +17,12 @@ internal class HttpTrace
     public Error? TracerError { get; set; }
 }
 
-internal class TraceEvent
+public class TraceEvent
 {
 
 }
 
-internal class MethodEvent : TraceEvent
+public class MethodEvent : TraceEvent
 {
     public string ClassName { get; set; }
     public string MethodName { get; set; }
@@ -31,7 +31,7 @@ internal class MethodEvent : TraceEvent
     public object ReturnValue { get; set; }
 }
 
-internal enum MethodEventType
+public enum MethodEventType
 {
     Invoke,
     Return

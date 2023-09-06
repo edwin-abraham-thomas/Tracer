@@ -7,7 +7,7 @@ using Tracer.Processors;
 
 namespace Tracer.Factories
 {
-    internal interface IProcessorFactory
+    public interface IProcessorFactory
     {
         ITraceProcessor GetTraceProcessor(TraceProcessorType processorType);
     }
