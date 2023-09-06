@@ -3,9 +3,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Tracer.Factories;
 using Tracer.Processors.TraceToFileProcessor;
 
-namespace Tracer.Extentions;
+namespace Tracer.Extensions;
 
-public static class RegisterationExtention
+public static class RegistrationExtensions
 {
     public static IApplicationBuilder UseTracerMiddleware(this IApplicationBuilder builder)
     {
@@ -14,7 +14,7 @@ public static class RegisterationExtention
 
     public static void RegisterTracerMiddleware(this IServiceCollection services)
     {
-        services.AddTransient<ITraceToFileProcessor, TraceToFileProcessor>();
+        services.AddScoped<ITraceToFileProcessor, TraceToFileProcessor>();
         services.AddTransient<IProcessorFactory, ProcessorFactory>();
     }
 }

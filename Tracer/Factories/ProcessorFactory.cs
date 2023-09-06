@@ -20,17 +20,12 @@ namespace Tracer.Factories
 
         public ITraceProcessor GetTraceProcessor(TraceProcessorType processorType)
         {
-            ITraceProcessor traceProcessor = null;
-            switch (processorType)
+            ITraceProcessor traceProcessor = processorType switch
             {
-                case TraceProcessorType.TraceToFile:
-                    traceProcessor = _serviceProvider.GetRequiredService<ITraceToFileProcessor>();
-                    break;
+                TraceProcessorType.TraceToFile => _serviceProvider.GetRequiredService<ITraceToFileProcessor>(),
 
-                default: 
-                    traceProcessor = _serviceProvider.GetRequiredService<ITraceToFileProcessor>();
-                    break;
-            }
+                _ => _serviceProvider.GetRequiredService<ITraceToFileProcessor>(),
+            };
 
             return traceProcessor;
         }

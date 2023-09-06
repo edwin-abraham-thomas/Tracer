@@ -1,144 +1,124 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using System.Diagnostics;
-using System.Net.Http;
 using Tracer.Models;
 
 namespace Tracer.Processors.TraceToFileProcessor;
 
-internal class TraceToFileProcessor : ITraceToFileProcessor
+internal class TraceToFileProcessor : ITraceToFileProcessor, IAsyncDisposable
 {
+
+    private readonly string _traceFilePath = @".\Traces\";
+    private MemoryStream? responseBodyMemoryStream; 
+    private Stream? originalResponseBody;
+    private HttpTrace Trace;
+
     public TraceToFileProcessor()
     {
         EnsureTraceFolderExist();
+        Trace = new HttpTrace();
     }
 
-    private readonly string _traceFilePath = @".\Traces\";
-    private Stream originalResponseBody;
-    private MemoryStream responseBodyMemoryStream;
+    #region Public Methods
 
     public async Task ProcessRequestAsync(HttpContext httpContext)
     {
-        var trace = null as HttpTrace;
-
         try
         {
-            this.originalResponseBody = httpContext.Response.Body;
-            this.responseBodyMemoryStream = new MemoryStream();
-            httpContext.Response.Body = responseBodyMemoryStream;
+            ReplaceResponseBodyStream(httpContext);
 
             var request = httpContext.Request;
-
             var reader = new StreamReader(request.Body);
-            var rawMessage = await reader.ReadToEndAsync();
+            var requestString = await reader.ReadToEndAsync();
+            var requestObject = JsonConvert.DeserializeObject(requestString);
 
-            trace = new HttpTrace
-            {
-                RequestPath = request.Path,
-                RequestBody = rawMessage
-            };
-
-            await CreateTraceFile(trace, httpContext.Connection.Id);
+            Trace.RequestPath = request.Path;
+            Trace.RequestBody = requestObject;
         }
         catch (Exception ex)
         {
-            UpsertException(ex, trace);
-            await CreateTraceFile(trace, httpContext.Connection.Id);
+            UpsertTracerException(ex, Trace);
         }
     }
 
     public async Task ProcessResponseAsync(HttpContext httpContext)
     {
-        var trace = null as HttpTrace;
-
         try
         {
-            trace = await GetTrace(httpContext.Connection.Id);
-
             var response = httpContext.Response;
 
-            using (var responseBodyStream = new StreamReader(responseBodyMemoryStream))
-            {
-                responseBodyMemoryStream.Position = 0;
-                var responseBody = await responseBodyStream.ReadToEndAsync();
+            if(responseBodyMemoryStream is null) throw new NullReferenceException(nameof(responseBodyMemoryStream));
 
-                trace.ResponseBody = responseBody;
-                trace.ResponseStatusCode = (short) httpContext.Response.StatusCode;
+            using var responseBodyStream = new StreamReader(responseBodyMemoryStream);
+            responseBodyMemoryStream.Position = 0;
+            var responseBodyString = await responseBodyStream.ReadToEndAsync();
 
-                responseBodyMemoryStream.Position = 0;
-                await responseBodyMemoryStream.CopyToAsync(originalResponseBody);
+            Trace.ResponseBody = JsonConvert.DeserializeObject(responseBodyString);
+            Trace.ResponseStatusCode = (short)httpContext.Response.StatusCode;
 
-                await UpdateTraceFile(trace, httpContext.Connection.Id);
-            }            
+            await ReassignResponseBodyStream();
+
+            await CreateTraceFile(Trace, httpContext.Connection.Id);
         }
         catch (Exception ex)
         {
-            UpsertException(ex, trace);
-            await UpdateTraceFile(trace, httpContext.Connection.Id);
-        }
-        finally
-        {
-            await responseBodyMemoryStream.DisposeAsync();
-            await originalResponseBody.DisposeAsync();
+            UpsertTracerException(ex, Trace);
+            await CreateTraceFile(Trace, httpContext.Connection.Id);
         }
     }
 
-    public Task ProcessUnhandledException(HttpContext httpContext, Exception exception)
+    public async Task ProcessUnhandledException(HttpContext httpContext, Exception exception)
     {
-        throw new NotImplementedException();
+        try
+        {
+            if (responseBodyMemoryStream is null) throw new NullReferenceException(nameof(responseBodyMemoryStream));
+
+            using var responseBodyStream = new StreamReader(responseBodyMemoryStream);
+            responseBodyMemoryStream.Position = 0;
+            var responseBody = await responseBodyStream.ReadToEndAsync();
+
+            Trace.ResponseBody = responseBody;
+            Trace.ApplicationError = new Error(exception.Message, exception);
+            Trace.ResponseStatusCode = 500;
+
+            await CreateTraceFile(Trace, httpContext.Connection.Id);
+        }
+        catch (Exception ex)
+        {
+            UpsertTracerException(ex, Trace);
+            await CreateTraceFile(Trace, httpContext.Connection.Id);
+        }
     }
 
-    private void UpsertException(Exception exception, HttpTrace? httpTrace)
+    public void AddTraceEvent(TraceEvent traceEvent)
     {
-        if (httpTrace != null)
+        Trace.TraceEvents ??= new List<TraceEvent>();
+
+        Trace.TraceEvents.Add(traceEvent);
+    }
+
+    #endregion
+
+    #region Private Methods
+
+    private void UpsertTracerException(Exception exception, HttpTrace? httpTrace)
+    {
+        if (httpTrace is not null)
         {
-            httpTrace.TracerError = new Error
-            {
-                ErrorMessage = exception.Message,
-                Exception = exception,
-            };
+            httpTrace.TracerError = new Error(exception.Message, exception);
         }
         else
         {
             httpTrace = new HttpTrace
             {
-                TracerError = new Error
-                {
-                    ErrorMessage = exception.Message,
-                    Exception = exception,
-                }
+                TracerError = new Error(exception.Message, exception)
             };
         }
     }
 
     private async Task CreateTraceFile(HttpTrace trace, string connectionId)
     {
-        string json = JsonConvert.SerializeObject(trace);
+        string json = JsonConvert.SerializeObject(trace, Formatting.Indented);
         await File.WriteAllTextAsync(GetFilePath(connectionId), json);
-    }
-
-    private async Task UpdateTraceFile(HttpTrace httpTrace, string connectionId)
-    {
-        string path = GetFilePath(connectionId);
-        string json = JsonConvert.SerializeObject(httpTrace);
-
-        await File.WriteAllTextAsync(path, json);
-    }
-
-    private async Task<HttpTrace> GetTrace(string connectionId)
-    {
-        string TString = "";
-        using (StreamReader file = File.OpenText(GetFilePath(connectionId)))
-        using (JsonTextReader reader = new JsonTextReader(file))
-        {
-            var jToken = await JToken.ReadFromAsync(reader);
-            TString = jToken.ToString();
-        }
-
-        HttpTrace? dataObject = JsonConvert.DeserializeObject<HttpTrace>(TString);
-
-        return dataObject ?? throw new FileNotFoundException();
     }
 
     private string GetFilePath(string connectionId)
@@ -148,6 +128,26 @@ internal class TraceToFileProcessor : ITraceToFileProcessor
         return Path.Combine(_traceFilePath, $"trace-{connectionId}.json");
     }
 
+    private void ReplaceResponseBodyStream(HttpContext httpContext)
+    {
+        this.originalResponseBody = httpContext.Response.Body;
+        this.responseBodyMemoryStream = new MemoryStream();
+        httpContext.Response.Body = responseBodyMemoryStream;
+    }
+
+    private async Task ReassignResponseBodyStream()
+    {
+        if(responseBodyMemoryStream is null || originalResponseBody is null)
+        {
+            throw new ArgumentNullException($"{nameof(responseBodyMemoryStream)} OR {nameof(originalResponseBody)}");
+        }
+        else
+        {
+            responseBodyMemoryStream.Position = 0;
+            await responseBodyMemoryStream.CopyToAsync(originalResponseBody);
+        }
+    }
+
     private void EnsureTraceFolderExist()
     {
         if (Directory.Exists(_traceFilePath)) return;
@@ -155,4 +155,28 @@ internal class TraceToFileProcessor : ITraceToFileProcessor
         Directory.CreateDirectory(_traceFilePath);
     }
 
+    #region Dispose
+    private bool isDisposing = false;
+
+    public async ValueTask DisposeAsync()
+    {
+        if(!isDisposing)
+        {
+            Console.WriteLine($"Disposing TraceToFileProcessor");
+            isDisposing = true;
+            await DisposeResourcesAsync();
+        }
+    }
+
+    private async Task DisposeResourcesAsync()
+    {
+        if(this.responseBodyMemoryStream is not null)
+        {
+            await this.responseBodyMemoryStream.FlushAsync();
+            await this.responseBodyMemoryStream.DisposeAsync();
+        }
+    }
+    #endregion
+
+    #endregion
 }
