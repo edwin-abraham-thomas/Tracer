@@ -10,10 +10,10 @@
     <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Abstractions" Version="2.2.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
-	<PackageReference Include="Tracer.Core" Version="0.0.8" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Tracer\Tracer.Core\Tracer.Core.csproj" />
     <ProjectReference Include="..\Domain\Domain.csproj" />
     <ProjectReference Include="..\Infrastructure\Infrastructure.csproj" />
   </ItemGroup>
