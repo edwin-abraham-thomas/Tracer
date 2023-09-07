@@ -19,13 +19,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tracer.Core", "Tracer\Trace
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tracer.Extensions.ServiceRegistrar", "Tracer\Tracer.Extensions.TraceableServiceRegistrar\Tracer.Extensions.ServiceRegistrar.csproj", "{E05071AC-B403-4E3D-8A56-5C7933F209DF}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{BD1F533A-BD56-4EC1-9720-DB1467AC182D}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{D02B77F7-DFFC-4F4E-AC87-3C2520843E39}"
-	ProjectSection(SolutionItems) = preProject
-		.github\workflows\release-package.yml = .github\workflows\release-package.yml
-	EndProjectSection
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -67,7 +60,6 @@ Global
 		{AA32CF3B-4D50-4EED-A90D-532CF10341A1} = {ACE3C35B-2067-4AD0-A1C0-B846AB0DB601}
 		{ED2C2EE1-8251-4A98-B7A4-5C8AAB2B2222} = {84CD0C41-E9B4-4B4A-BBDF-280E57612C76}
 		{E05071AC-B403-4E3D-8A56-5C7933F209DF} = {84CD0C41-E9B4-4B4A-BBDF-280E57612C76}
-		{D02B77F7-DFFC-4F4E-AC87-3C2520843E39} = {BD1F533A-BD56-4EC1-9720-DB1467AC182D}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {74E797FC-F592-4660-8162-E67866AE4EBF}
