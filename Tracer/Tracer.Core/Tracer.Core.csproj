@@ -1,12 +1,23 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+
+	<PackageId>EdwinAt.Tracer.Core</PackageId>
+	<Authors>Edwin Abraham Thomas</Authors>
+	<Description>Advanced tracing for Web APIs.</Description>
+	<PackageReadmeFile>readme.md</PackageReadmeFile>
+	<PackageLicenseExpression>MIT</PackageLicenseExpression>
+	<PackageTags>Tracing, Trace, webapi, clean architecture</PackageTags>
+	<RepositoryUrl>https://github.com/edwin-abraham-thomas/Tracer</RepositoryUrl>
+	  
   </PropertyGroup>
 
   <ItemGroup>
+	<None Include="readme.md" Pack="true" PackagePath="\"/>
+	  
     <PackageReference Include="Castle.Core" Version="5.1.1" />
     <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.2.2" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />
